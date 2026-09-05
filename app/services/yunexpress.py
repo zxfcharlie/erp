@@ -84,7 +84,11 @@ def get_access_token(provider):
         data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
         timeout=15,
     )
-    resp.raise_for_status()
+    if not resp.ok:
+        # 不直接 raise_for_status()，先把云途返回的原始报文带出来，方便定位具体缺什么参数
+        raise YunExpressError(
+            f"获取云途访问令牌失败: HTTP {resp.status_code} - {resp.text[:1000]}"
+        )
     data = resp.json()
     access_token = data.get("accessToken")
     if not access_token:
@@ -282,7 +286,8 @@ def _call_signed_api(provider, method: str, path: str, payload: dict):
         data=body_str.encode("utf-8") if body_str else None,
         timeout=15,
     )
-    resp.raise_for_status()
+    if not resp.ok:
+        raise YunExpressError(f"调用云途接口失败: HTTP {resp.status_code} - {resp.text[:1000]}")
     return resp.json()
 
 
