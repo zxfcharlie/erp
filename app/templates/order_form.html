@@ -4,7 +4,7 @@
 <h4 class="mb-3">新建发货订单（推送云途物流下单信息）</h4>
 <form method="post" action="/orders/new">
 
-  <div class="form-section-title">基础信息</div>
+  <div class="form-section-title">业务金额信息（新增）</div>
   <div class="row g-2">
     <div class="col-md-3">
       <label class="form-label">所属店铺 *</label>
@@ -13,31 +13,6 @@
         {% for s in shops %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
       </select>
     </div>
-    <div class="col-md-3">
-      <label class="form-label">客户订单号</label>
-      <input class="form-control" name="customer_order_number">
-    </div>
-    <div class="col-md-2">
-      <label class="form-label">产品代码(云途产品编码) *</label>
-      <input class="form-control" name="product_code" placeholder="不带电产品编码" required>
-    </div>
-    <div class="col-md-2">
-      <label class="form-label">货物类型</label>
-      <input class="form-control" name="cargo_type" placeholder="如：不带电">
-    </div>
-    <div class="col-md-2">
-      <label class="form-label">申报币种</label>
-      <select class="form-select" name="declare_currency">
-        <option value="USD" selected>USD</option>
-        <option value="EUR">EUR</option>
-        <option value="GBP">GBP</option>
-        <option value="CNY">CNY</option>
-      </select>
-    </div>
-  </div>
-
-  <div class="form-section-title">业务金额信息（新增）</div>
-  <div class="row g-2">
     <div class="col-md-3">
       <label class="form-label">订单金额</label>
       <input class="form-control" type="number" step="0.01" name="order_amount" value="0">
@@ -52,6 +27,32 @@
     </div>
   </div>
   <p class="text-muted small">创建时间与创建人将在提交后由系统自动记录（当前登录用户 / 当前时间）。</p>
+
+  <div class="form-section-title">基础信息</div>
+  <div class="row g-2">
+    <div class="col-md-3">
+      <label class="form-label">客户订单号</label>
+      <input class="form-control" name="customer_order_number">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">产品代码(云途产品编码) *</label>
+      <input class="form-control" name="product_code" placeholder="不带电产品编码" required>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">货物类型</label>
+      <input class="form-control" name="cargo_type" placeholder="如：不带电">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">申报币种 *</label>
+      <select class="form-select" name="declare_currency" required>
+        <option value="USD" selected>USD</option>
+        <option value="EUR">EUR</option>
+        <option value="GBP">GBP</option>
+        <option value="CNY">CNY</option>
+      </select>
+    </div>
+  </div>
+
 
   <div class="form-section-title">增值服务 / 税号信息</div>
   <div class="row g-2">
@@ -77,14 +78,14 @@
     <div class="col-md-3"><label class="form-label">姓名 *</label><input class="form-control" name="receiver_name" required></div>
     <div class="col-md-3"><label class="form-label">公司</label><input class="form-control" name="receiver_company"></div>
     <div class="col-md-2"><label class="form-label">ID</label><input class="form-control" name="receiver_id_number"></div>
-    <div class="col-md-2"><label class="form-label">门牌号</label><input class="form-control" name="receiver_house_number"></div>
+    <div class="col-md-2"><label class="form-label">门牌号 *</label><input class="form-control" name="receiver_house_number" required></div>
   </div>
   <div class="row g-2 mt-1">
     <div class="col-md-4"><label class="form-label">详细地址 *</label><input class="form-control" name="receiver_address" required></div>
     <div class="col-md-2"><label class="form-label">城市 *</label><input class="form-control" name="receiver_city" required></div>
-    <div class="col-md-2"><label class="form-label">省/州</label><input class="form-control" name="receiver_state"></div>
-    <div class="col-md-2"><label class="form-label">邮编</label><input class="form-control" name="receiver_zip"></div>
-    <div class="col-md-2"><label class="form-label">电话</label><input class="form-control" name="receiver_phone"></div>
+    <div class="col-md-2"><label class="form-label">省/州 *</label><input class="form-control" name="receiver_state" required></div>
+    <div class="col-md-2"><label class="form-label">邮编 *</label><input class="form-control" name="receiver_zip" required></div>
+    <div class="col-md-2"><label class="form-label">电话 *</label><input class="form-control" name="receiver_phone" required></div>
   </div>
   <div class="row g-2 mt-1">
     <div class="col-md-4"><label class="form-label">邮箱</label><input class="form-control" name="receiver_email"></div>
@@ -143,19 +144,19 @@
   <table class="table table-bordered bg-white" id="items-table">
     <thead class="table-light">
       <tr>
-        <th>SKU</th><th>英文申报品名 *</th><th>中文申报品名</th><th>数量</th>
-        <th>申报FOB价</th><th>成交价</th><th>单重(kg)</th><th>海关编码</th><th>材质</th><th>品牌</th><th></th>
+        <th>SKU</th><th>英文申报品名 *</th><th>中文申报品名 *</th><th>数量 *</th>
+        <th>申报FOB价 *</th><th>成交价</th><th>单重(kg) *</th><th>海关编码</th><th>材质</th><th>品牌</th><th></th>
       </tr>
     </thead>
     <tbody>
       <tr>
         <td><input class="form-control form-control-sm" name="item_sku"></td>
-        <td><input class="form-control form-control-sm" name="item_name_en" placeholder="Picture puzzle"></td>
-        <td><input class="form-control form-control-sm" name="item_name_cn" placeholder="木质拼图"></td>
-        <td><input class="form-control form-control-sm" type="number" name="item_qty" value="1"></td>
-        <td><input class="form-control form-control-sm" type="number" step="0.01" name="item_fob"></td>
+        <td><input class="form-control form-control-sm" name="item_name_en" placeholder="Picture puzzle" required></td>
+        <td><input class="form-control form-control-sm" name="item_name_cn" placeholder="木质拼图" required></td>
+        <td><input class="form-control form-control-sm" type="number" name="item_qty" value="1" required></td>
+        <td><input class="form-control form-control-sm" type="number" step="0.01" name="item_fob" required></td>
         <td><input class="form-control form-control-sm" type="number" step="0.01" name="item_price"></td>
-        <td><input class="form-control form-control-sm" type="number" step="0.001" name="item_unit_weight"></td>
+        <td><input class="form-control form-control-sm" type="number" step="0.001" name="item_unit_weight" required></td>
         <td><input class="form-control form-control-sm" name="item_hs_code"></td>
         <td><input class="form-control form-control-sm" name="item_material"></td>
         <td><input class="form-control form-control-sm" name="item_brand"></td>
