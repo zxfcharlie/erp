@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}等待审核{% endblock %}
+{% block content %}
+<div class="row justify-content-center mt-5">
+  <div class="col-md-6">
+    <div class="alert alert-warning text-center">
+      您好 {{ user.username }}，您的账号状态为「{{ '待审核' if user.status == 'pending' else '已拒绝' }}」，
+      {% if user.status == 'pending' %}请联系管理员审核通过后再登录使用系统。{% else %}请联系管理员处理。{% endif %}
+    </div>
+    <div class="text-center"><a href="/logout" class="btn btn-secondary">退出登录</a></div>
+  </div>
+</div>
+{% endblock %}

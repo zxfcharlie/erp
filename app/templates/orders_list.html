@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}订单列表{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0">发货订单列表</h4>
+  <a href="/orders/new" class="btn btn-primary">+ 新建发货订单</a>
+</div>
+
+<form class="row g-2 mb-3" method="get">
+  <div class="col-md-3">
+    <select name="shop_id" class="form-select" onchange="this.form.submit()">
+      <option value="">全部店铺</option>
+      {% for s in shops %}
+      <option value="{{ s.id }}" {% if selected_shop_id == s.id %}selected{% endif %}>{{ s.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</form>
+
+<table class="table table-bordered bg-white orders-table">
+  <thead class="table-light">
+    <tr>
+      <th>内部单号</th><th>客户订单号</th><th>店铺</th><th>收件人/国家</th>
+      <th>订单金额</th><th>实收金额</th><th>采购成本</th>
+      <th>状态</th><th>运单号</th><th>创建人</th><th>创建时间</th><th></th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for o in orders %}
+    <tr>
+      <td>{{ o.order_no }}</td>
+      <td>{{ o.customer_order_number }}</td>
+      <td>{{ o.shop.name if o.shop else '' }}</td>
+      <td>{{ o.receiver_name }} / {{ o.receiver_country }}</td>
+      <td>{{ '%.2f'|format(o.order_amount) }}</td>
+      <td>{{ '%.2f'|format(o.actual_received_amount) }}</td>
+      <td>{{ '%.2f'|format(o.purchase_cost_rmb) }}</td>
+      <td><span class="badge badge-status-{{ o.status }}">{{ {'draft':'草稿','pushed':'已推送','success':'推送成功','failed':'推送失败'}.get(o.status, o.status) }}</span></td>
+      <td>{{ o.tracking_number }}</td>
+      <td>{{ o.created_by_name }}</td>
+      <td>{{ o.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+      <td><a class="btn btn-sm btn-outline-primary" href="/orders/{{ o.id }}">查看</a></td>
+    </tr>
+  {% else %}
+    <tr><td colspan="12" class="text-center text-muted py-4">
+      {% if not shops %}您暂未被分配任何店铺，请联系管理员配置。{% else %}暂无订单{% endif %}
+    </td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

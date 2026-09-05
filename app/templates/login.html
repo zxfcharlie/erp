@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}登录 - 跨境ERP系统{% endblock %}
+{% block content %}
+<div class="row justify-content-center mt-5">
+  <div class="col-md-4">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h4 class="mb-3 text-center">登录 ERP 系统</h4>
+        {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+        <form method="post" action="/login">
+          <div class="mb-3">
+            <label class="form-label">用户名</label>
+            <input class="form-control" name="username" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">密码</label>
+            <input class="form-control" type="password" name="password" required>
+          </div>
+          <button class="btn btn-primary w-100" type="submit">登录</button>
+        </form>
+        <div class="text-center mt-3">
+          <a href="/register">没有账号？去注册</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

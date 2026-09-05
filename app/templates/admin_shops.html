@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}店铺管理{% endblock %}
+{% block content %}
+<h4 class="mb-3">店铺管理</h4>
+<div class="card">
+  <div class="card-body">
+    <form method="post" action="/admin/shops/create" class="row g-2">
+      <div class="col-md-3"><input class="form-control" name="name" placeholder="店铺名称" required></div>
+      <div class="col-md-3"><input class="form-control" name="code" placeholder="店铺编码(可选)"></div>
+      <div class="col-md-4"><input class="form-control" name="remark" placeholder="备注(可选)"></div>
+      <div class="col-md-2"><button class="btn btn-primary w-100">新增店铺</button></div>
+    </form>
+  </div>
+</div>
+
+<table class="table table-bordered bg-white mt-3">
+  <thead class="table-light"><tr><th>店铺名称</th><th>编码</th><th>备注</th><th>创建时间</th><th>操作</th></tr></thead>
+  <tbody>
+  {% for s in shops %}
+    <tr>
+      <td>{{ s.name }}</td>
+      <td>{{ s.code }}</td>
+      <td>{{ s.remark }}</td>
+      <td>{{ s.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+      <td>
+        <form method="post" action="/admin/shops/{{ s.id }}/delete" onsubmit="return confirm('确认删除该店铺？')">
+          <button class="btn btn-sm btn-outline-danger">删除</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

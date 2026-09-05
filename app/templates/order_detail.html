@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}订单详情{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0">订单详情 - {{ order.order_no }}</h4>
+  <a href="/orders" class="btn btn-secondary btn-sm">返回列表</a>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-3"><b>店铺：</b>{{ order.shop.name if order.shop else '' }}</div>
+      <div class="col-md-3"><b>客户订单号：</b>{{ order.customer_order_number }}</div>
+      <div class="col-md-3"><b>状态：</b><span class="badge badge-status-{{ order.status }}">{{ {'draft':'草稿','pushed':'已推送','success':'推送成功','failed':'推送失败'}.get(order.status, order.status) }}</span></div>
+      <div class="col-md-3"><b>运单号：</b>{{ order.tracking_number or '-' }}</div>
+    </div>
+    <div class="row mt-2">
+      <div class="col-md-3"><b>订单金额：</b>{{ '%.2f'|format(order.order_amount) }}</div>
+      <div class="col-md-3"><b>实收金额：</b>{{ '%.2f'|format(order.actual_received_amount) }}</div>
+      <div class="col-md-3"><b>采购成本(¥)：</b>{{ '%.2f'|format(order.purchase_cost_rmb) }}</div>
+      <div class="col-md-3"><b>创建人：</b>{{ order.created_by_name }} / {{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <h6>收发件信息</h6>
+    <div class="row">
+      <div class="col-md-6">
+        <b>收件人：</b>{{ order.receiver_name }}（{{ order.receiver_country }}）<br>
+        {{ order.receiver_address }}, {{ order.receiver_city }} {{ order.receiver_state }} {{ order.receiver_zip }}<br>
+        电话：{{ order.receiver_phone }} 邮箱：{{ order.receiver_email }}
+      </div>
+      <div class="col-md-6">
+        <b>发件人：</b>{{ order.sender_name }}（{{ order.sender_country }}）<br>
+        {{ order.sender_address }}, {{ order.sender_city }} {{ order.sender_state }} {{ order.sender_zip }}<br>
+        电话：{{ order.sender_phone }} 邮箱：{{ order.sender_email }}
+      </div>
+    </div>
+    <hr>
+    <div class="row">
+      <div class="col-md-4"><b>产品代码：</b>{{ order.product_code }}</div>
+      <div class="col-md-4"><b>件数/总重：</b>{{ order.package_count }} 件 / {{ order.total_weight }} kg</div>
+      <div class="col-md-4"><b>货物类型：</b>{{ order.cargo_type }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <h6>申报品名</h6>
+    <table class="table table-sm table-bordered">
+      <thead><tr><th>SKU</th><th>英文品名</th><th>中文品名</th><th>数量</th><th>FOB</th><th>单重</th><th>海关编码</th></tr></thead>
+      <tbody>
+      {% for it in order.get_declared_items() %}
+        <tr>
+          <td>{{ it.sku }}</td><td>{{ it.declared_name_en }}</td><td>{{ it.declared_name_cn }}</td>
+          <td>{{ it.quantity }}</td><td>{{ it.declared_fob }}</td><td>{{ it.unit_weight }}</td><td>{{ it.hs_code }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <h6>推送云途 / 物流商</h6>
+    <form method="post" action="/orders/{{ order.id }}/push" class="row g-2 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label">选择物流商配置</label>
+        <select class="form-select" name="provider_id" required>
+          <option value="">请选择</option>
+          {% for p in providers %}
+          <option value="{{ p.id }}" {% if order.logistics_provider_id == p.id %}selected{% endif %}>{{ p.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2"><button class="btn btn-primary">推送生成运单</button></div>
+    </form>
+    {% if order.push_error %}
+    <div class="alert alert-danger mt-3"><b>推送失败原因：</b>{{ order.push_error }}</div>
+    {% endif %}
+    {% if order.push_response %}
+    <details class="mt-2"><summary>查看接口返回原始数据</summary><pre>{{ order.push_response }}</pre></details>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
