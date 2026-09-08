@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}产品编码库{% endblock %}
+{% block content %}
+<h4 class="mb-3">产品编码库（云途产品代码）</h4>
+
+{% if sync_error %}
+<div class="alert alert-danger">从云途同步失败：{{ sync_error }}</div>
+{% endif %}
+{% if sync_count %}
+<div class="alert alert-success">已从云途同步 {{ sync_count }} 个产品到本地库。</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-body">
+    <h6>从云途同步（调用官方"查询物流产品列表"接口）</h6>
+    {% if yunexpress_providers %}
+    <form method="post" action="/admin/products/sync_yunexpress" class="row g-2">
+      <div class="col-md-4">
+        <select class="form-select" name="provider_id" required>
+          {% for p in yunexpress_providers %}
+          <option value="{{ p.id }}">{{ p.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2"><button class="btn btn-primary w-100">立即同步</button></div>
+    </form>
+    {% else %}
+    <p class="text-muted small mb-0">暂无已启用的云途物流商配置，请先在"物流商配置"页面添加。</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <h6>单条新增</h6>
+    <form method="post" action="/admin/products/create" class="row g-2">
+      <div class="col-md-3"><input class="form-control" name="code" placeholder="产品编码，如 YTYCPREG" required></div>
+      <div class="col-md-4"><input class="form-control" name="name" placeholder="产品名称(可选)"></div>
+      <div class="col-md-3"><input class="form-control" name="remark" placeholder="备注(可选)"></div>
+      <div class="col-md-2"><button class="btn btn-primary w-100">新增</button></div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <h6>批量导入</h6>
+    <form method="post" action="/admin/products/import">
+      <textarea class="form-control mb-2" name="bulk_text" rows="4" placeholder="每行一个，格式：编码,名称,备注(名称/备注可省略)&#10;例如：&#10;YTYCPREG,云途标准挂号,不带电&#10;S1002"></textarea>
+      <button class="btn btn-outline-primary">批量导入</button>
+    </form>
+  </div>
+</div>
+
+<table class="table table-bordered bg-white mt-3">
+  <thead class="table-light"><tr><th>产品编码</th><th>名称</th><th>备注</th><th>创建时间</th><th>操作</th></tr></thead>
+  <tbody>
+  {% for p in products %}
+    <tr>
+      <td>{{ p.code }}</td>
+      <td>{{ p.name }}</td>
+      <td>{{ p.remark }}</td>
+      <td>{{ p.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+      <td>
+        <form method="post" action="/admin/products/{{ p.id }}/delete" onsubmit="return confirm('确认删除？')">
+          <button class="btn btn-sm btn-outline-danger">删除</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}历史订单{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0">历史订单（已归档）</h4>
+  <a href="/orders" class="btn btn-secondary btn-sm">返回订单列表</a>
+</div>
+<p class="text-muted small">
+  为控制主库体积、保证 /orders 列表查询速度，超出最近 200 条(可调)的老订单会被系统自动压缩归档到这里，
+  数据没有丢失，只是查看详情时需要多一次解压，列表页展示的字段也比在线订单少一些。当前共归档 {{ total_archived }} 条。
+</p>
+
+<form class="row g-2 mb-3" method="get">
+  <div class="col-md-3">
+    <select name="shop_id" class="form-select">
+      <option value="">全部店铺</option>
+      {% for s in shops %}
+      <option value="{{ s.id }}" {% if filters.shop_id == s.id %}selected{% endif %}>{{ s.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-3"><input class="form-control" name="keyword" value="{{ filters.keyword }}" placeholder="内部单号/客户订单号/运单号"></div>
+  <div class="col-md-2"><input class="form-control" type="date" name="date_from" value="{{ filters.date_from }}"></div>
+  <div class="col-md-2"><input class="form-control" type="date" name="date_to" value="{{ filters.date_to }}"></div>
+  <div class="col-md-2"><button class="btn btn-primary w-100">筛选</button></div>
+</form>
+
+<table class="table table-bordered bg-white orders-table">
+  <thead class="table-light">
+    <tr>
+      <th>内部单号</th><th>客户订单号</th><th>店铺</th><th>产品代码</th>
+      <th>订单金额</th><th>实收金额</th><th>采购成本</th><th>实际运费</th>
+      <th>推送状态</th><th>签收状态</th><th>创建时间</th><th>归档时间</th><th></th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for a in archives %}
+    <tr>
+      <td>{{ a.order_no }}</td>
+      <td>{{ a.customer_order_number }}</td>
+      <td>{{ a.shop.name if a.shop else '' }}</td>
+      <td>{{ a.product_code }}</td>
+      <td>{{ '%.2f'|format(a.order_amount) }}</td>
+      <td>{{ '%.2f'|format(a.actual_received_amount) }}</td>
+      <td>{{ '%.2f'|format(a.purchase_cost_rmb) }}</td>
+      <td>{{ '%.2f'|format(a.actual_freight) if a.actual_freight is not none else '-' }}</td>
+      <td><span class="badge badge-status-{{ a.status }}">{{ {'draft':'草稿','success':'推送成功','failed':'推送失败'}.get(a.status, a.status) }}</span></td>
+      <td>
+        {% if a.delivery_status == 'delivered' %}<span class="badge bg-success">已签收</span>
+        {% elif a.delivery_status == 'in_transit' %}<span class="badge bg-info text-dark">运输中</span>
+        {% else %}<span class="text-muted">-</span>{% endif %}
+      </td>
+      <td>{{ a.created_at.strftime('%Y-%m-%d %H:%M') if a.created_at else '' }}</td>
+      <td>{{ a.archived_at.strftime('%Y-%m-%d %H:%M') if a.archived_at else '' }}</td>
+      <td><a class="btn btn-sm btn-outline-primary" href="/order-archive/{{ a.id }}">查看</a></td>
+    </tr>
+  {% else %}
+    <tr><td colspan="13" class="text-center text-muted py-4">暂无历史归档订单</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

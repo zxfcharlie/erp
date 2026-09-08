@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+{% block title %}{{ '编辑订单' if order else '新建发货订单' }}{% endblock %}
+{% block content %}
+<h4 class="mb-3">{{ '编辑订单 - ' + order.order_no if order else '新建发货订单（推送云途物流下单信息）' }}</h4>
+{% if order and order.review_status == 'pending' %}
+<div class="alert alert-warning">该订单待审核，请补充/核对下方信息，保存后回到详情页点"审核通过"再推送。</div>
+{% endif %}
+<p class="text-muted small">当前表单只展示必填字段；销售平台、支付信息、税号/附加服务等选填内容暂未开放录入，后续如需要可以再加回来。</p>
+<form method="post" action="{{ '/orders/' + order.id|string + '/edit' if order else '/orders/new' }}">
+
+  <div class="form-section-title">业务金额信息（新增）</div>
+  <div class="row g-2">
+    <div class="col-md-3">
+      <label class="form-label">所属店铺 *</label>
+      <select class="form-select" name="shop_id" id="shopSelect" required>
+        <option value="">请选择店铺</option>
+        {% for s in shops %}<option value="{{ s.id }}" {% if order and order.shop_id == s.id %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">订单金额 *</label>
+      <input class="form-control" type="number" step="0.01" name="order_amount" value="{{ order.order_amount if order else '' }}" required>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">实收金额 *</label>
+      <input class="form-control" type="number" step="0.01" name="actual_received_amount" value="{{ order.actual_received_amount if order else '' }}" required>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">采购成本（人民币） *</label>
+      <input class="form-control" type="number" step="0.01" name="purchase_cost_rmb" value="{{ order.purchase_cost_rmb if order else '' }}" required>
+    </div>
+  </div>
+  <p class="text-muted small">创建时间与创建人{{ '不会变' if order else '将在提交后由系统自动记录（当前登录用户 / 当前时间）' }}。</p>
+
+  <div class="form-section-title">基础信息</div>
+  <div class="row g-2">
+    <div class="col-md-3">
+      <label class="form-label">客户订单号</label>
+      <input class="form-control" name="customer_order_number" value="{{ order.customer_order_number if order else '' }}">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">商品名称</label>
+      <input class="form-control" name="product_name" value="{{ order.product_name if order else '' }}" placeholder="填写申报品名时的参考">
+    </div>
+    <div class="col-md-3 position-relative">
+      <label class="form-label">产品代码(云途产品编码) *</label>
+      <input class="form-control" name="product_code" id="productCodeInput" value="{{ order.product_code if order else '' }}" placeholder="不带电产品编码，可输入关键字搜索" required autocomplete="off">
+      <div id="productCodeSuggestions" class="list-group position-absolute w-100" style="z-index: 1000; display:none;"></div>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">申报币种 *</label>
+      <select class="form-select" name="declare_currency" required>
+        {% set cur = order.declare_currency if order else 'USD' %}
+        <option value="USD" {% if cur == 'USD' %}selected{% endif %}>USD</option>
+        <option value="EUR" {% if cur == 'EUR' %}selected{% endif %}>EUR</option>
+        <option value="GBP" {% if cur == 'GBP' %}selected{% endif %}>GBP</option>
+        <option value="CNY" {% if cur == 'CNY' %}selected{% endif %}>CNY</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="form-section-title">收件人信息</div>
+  <div class="row g-2">
+    <div class="col-md-2"><label class="form-label">国家 *</label><input class="form-control" name="receiver_country" value="{{ order.receiver_country if order else '' }}" required placeholder="如 US"></div>
+    <div class="col-md-3"><label class="form-label">姓名 *</label><input class="form-control" name="receiver_name" value="{{ order.receiver_name if order else '' }}" required></div>
+    <div class="col-md-2"><label class="form-label">门牌号 *</label><input class="form-control" name="receiver_house_number" value="{{ order.receiver_house_number if order else '' }}" required></div>
+    <div class="col-md-2"><label class="form-label">省/州 *</label><input class="form-control" name="receiver_state" value="{{ order.receiver_state if order else '' }}" required></div>
+    <div class="col-md-3"><label class="form-label">邮编 *</label><input class="form-control" name="receiver_zip" value="{{ order.receiver_zip if order else '' }}" required></div>
+  </div>
+  <div class="row g-2 mt-1">
+    <div class="col-md-5"><label class="form-label">详细地址 *</label><input class="form-control" name="receiver_address" value="{{ order.receiver_address if order else '' }}" required></div>
+    <div class="col-md-3"><label class="form-label">城市 *</label><input class="form-control" name="receiver_city" value="{{ order.receiver_city if order else '' }}" required></div>
+    <div class="col-md-4"><label class="form-label">电话 *</label><input class="form-control" name="receiver_phone" value="{{ order.receiver_phone if order else '' }}" required></div>
+  </div>
+
+  <div class="form-section-title d-flex justify-content-between align-items-center">
+    <span>发件人信息</span>
+    <button type="button" class="btn btn-sm btn-outline-success" onclick="saveSenderPreset()">保存为该店铺默认发件人</button>
+  </div>
+  <p class="text-muted small" id="senderPresetHint">选择所属店铺后，如该店铺已保存过默认发件人信息，会自动填充下方字段；填好后可点右上角按钮保存/更新预设。</p>
+  <div class="row g-2">
+    <div class="col-md-3"><label class="form-label">姓名 *</label><input class="form-control" name="sender_name" id="senderName" value="{{ order.sender_name if order else '' }}" required></div>
+    <div class="col-md-3"><label class="form-label">国家 *</label><input class="form-control" name="sender_country" id="senderCountry" required placeholder="如 CN" value="{{ order.sender_country if order else 'CN' }}"></div>
+    <div class="col-md-3"><label class="form-label">省/州 *</label><input class="form-control" name="sender_state" id="senderState" value="{{ order.sender_state if order else '' }}" required></div>
+    <div class="col-md-3"><label class="form-label">城市 *</label><input class="form-control" name="sender_city" id="senderCity" value="{{ order.sender_city if order else '' }}" required></div>
+  </div>
+  <div class="row g-2 mt-1">
+    <div class="col-md-5"><label class="form-label">详细地址 *</label><input class="form-control" name="sender_address" id="senderAddress" value="{{ order.sender_address if order else '' }}" required></div>
+    <div class="col-md-3"><label class="form-label">邮编 *</label><input class="form-control" name="sender_zip" id="senderZip" value="{{ order.sender_zip if order else '' }}" required></div>
+    <div class="col-md-4"><label class="form-label">电话 *</label><input class="form-control" name="sender_phone" id="senderPhone" value="{{ order.sender_phone if order else '' }}" required></div>
+  </div>
+
+  <div class="form-section-title">包裹信息</div>
+  <div class="row g-2">
+    <div class="col-md-3"><label class="form-label">件数 *</label><input class="form-control" type="number" name="package_count" value="{{ order.package_count if order else 1 }}" required></div>
+    <div class="col-md-3"><label class="form-label">包裹总重量(kg) *</label><input class="form-control" type="number" step="0.001" name="total_weight" value="{{ order.total_weight if order else '' }}" required></div>
+  </div>
+
+  <div class="form-section-title">申报品名信息（可添加多行）</div>
+  <div class="row g-2 mb-2">
+    <div class="col-md-5">
+      <select class="form-select form-select-sm" id="templateSelect">
+        <option value="">从常用品名中选择自动填充...</option>
+      </select>
+    </div>
+  </div>
+  <table class="table table-bordered bg-white" id="items-table">
+    <thead class="table-light">
+      <tr>
+        <th>英文申报品名 *</th><th>中文申报品名 *</th><th>数量 *</th>
+        <th>申报FOB价 *</th><th>单重(kg) *</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% set items = order.get_declared_items() if order else [] %}
+      {% if items %}
+        {% for it in items %}
+        <tr>
+          <td><input class="form-control form-control-sm" name="item_name_en" value="{{ it.declared_name_en }}" placeholder="Picture puzzle" required></td>
+          <td><input class="form-control form-control-sm" name="item_name_cn" value="{{ it.declared_name_cn }}" placeholder="木质拼图" required></td>
+          <td><input class="form-control form-control-sm" type="number" name="item_qty" value="{{ it.quantity }}" required></td>
+          <td><input class="form-control form-control-sm" type="number" step="0.01" name="item_fob" value="{{ it.declared_fob }}" required></td>
+          <td><input class="form-control form-control-sm" type="number" step="0.001" name="item_unit_weight" value="{{ it.unit_weight }}" required></td>
+          <td>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this)">删除</button>
+            <button type="button" class="btn btn-sm btn-outline-success" onclick="saveAsTemplate(this)">保存为常用</button>
+          </td>
+        </tr>
+        {% endfor %}
+      {% else %}
+      <tr>
+        <td><input class="form-control form-control-sm" name="item_name_en" placeholder="Picture puzzle" required></td>
+        <td><input class="form-control form-control-sm" name="item_name_cn" placeholder="木质拼图" required></td>
+        <td><input class="form-control form-control-sm" type="number" name="item_qty" value="1" required></td>
+        <td><input class="form-control form-control-sm" type="number" step="0.01" name="item_fob" required></td>
+        <td><input class="form-control form-control-sm" type="number" step="0.001" name="item_unit_weight" required></td>
+        <td>
+          <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this)">删除</button>
+          <button type="button" class="btn btn-sm btn-outline-success" onclick="saveAsTemplate(this)">保存为常用</button>
+        </td>
+      </tr>
+      {% endif %}
+    </tbody>
+  </table>
+  <button type="button" class="btn btn-sm btn-outline-secondary mb-3" onclick="addRow()">+ 添加一行申报品名</button>
+
+  <div class="mt-3">
+    <button class="btn btn-primary" type="submit">{{ '保存修改' if order else '保存订单' }}</button>
+    <a href="{{ '/orders/' + order.id|string if order else '/orders' }}" class="btn btn-secondary">取消</a>
+  </div>
+</form>
+
+<script id="declarationTemplatesData" type="application/json">{{ declaration_templates_json | safe }}</script>
+<script id="shopsSenderData" type="application/json">{{ shops_sender_json | safe }}</script>
+<script>
+// ---------------- 店铺默认发件人预设 ----------------
+let shopsSenderData = {};
+try {
+  shopsSenderData = JSON.parse(document.getElementById('shopsSenderData').textContent || '{}');
+} catch (e) { shopsSenderData = {}; }
+
+const senderFieldIds = {
+  sender_name: 'senderName', sender_country: 'senderCountry', sender_state: 'senderState',
+  sender_city: 'senderCity', sender_address: 'senderAddress', sender_zip: 'senderZip', sender_phone: 'senderPhone',
+};
+
+document.getElementById('shopSelect').addEventListener('change', function () {
+  const preset = shopsSenderData[this.value];
+  if (!preset) return;
+  // 只有该店铺保存过预设(姓名不为空)才自动填充，避免清空用户已经手填的内容
+  if (!preset.sender_name) return;
+  Object.keys(senderFieldIds).forEach(key => {
+    document.getElementById(senderFieldIds[key]).value = preset[key] || '';
+  });
+});
+
+function saveSenderPreset() {
+  const shopId = document.getElementById('shopSelect').value;
+  if (!shopId) { alert('请先选择所属店铺'); return; }
+  const payload = {};
+  Object.keys(senderFieldIds).forEach(key => {
+    payload[key] = document.getElementById(senderFieldIds[key]).value;
+  });
+  if (!payload.sender_name) { alert('请先填写发件人姓名等信息再保存'); return; }
+  fetch(`/api/shops/${shopId}/sender-preset`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload),
+  }).then(r => r.json()).then(data => {
+    if (data.success) {
+      shopsSenderData[shopId] = data.preset;
+      const hint = document.getElementById('senderPresetHint');
+      hint.textContent = '已保存为该店铺默认发件人信息，下次新建订单选中该店铺会自动填充。';
+      hint.classList.add('text-success');
+    } else {
+      alert(data.error || '保存失败');
+    }
+  }).catch(() => alert('保存失败，请检查网络'));
+}
+
+// ---------------- 申报品名行 增删 ----------------
+function addRow() {
+  const tbody = document.querySelector('#items-table tbody');
+  const first = tbody.querySelector('tr').cloneNode(true);
+  first.querySelectorAll('input').forEach(i => i.value = (i.name === 'item_qty' ? 1 : ''));
+  tbody.appendChild(first);
+  return first;
+}
+function removeRow(btn) {
+  const tbody = document.querySelector('#items-table tbody');
+  if (tbody.querySelectorAll('tr').length > 1) {
+    btn.closest('tr').remove();
+  }
+}
+
+// ---------------- 常用申报品名模板 ----------------
+let declarationTemplates = [];
+try {
+  declarationTemplates = JSON.parse(document.getElementById('declarationTemplatesData').textContent || '[]');
+} catch (e) { declarationTemplates = []; }
+
+function refreshTemplateSelect() {
+  const sel = document.getElementById('templateSelect');
+  sel.innerHTML = '<option value="">从常用品名中选择自动填充...</option>';
+  declarationTemplates.forEach((t, idx) => {
+    const opt = document.createElement('option');
+    opt.value = idx;
+    opt.textContent = t.label + (t.declared_name_cn ? ' / ' + t.declared_name_cn : '');
+    sel.appendChild(opt);
+  });
+}
+refreshTemplateSelect();
+
+document.getElementById('templateSelect').addEventListener('change', function () {
+  if (this.value === '') return;
+  const t = declarationTemplates[parseInt(this.value, 10)];
+  if (!t) return;
+  // 找一个还没填英文品名的空行，没有则新增一行
+  let rows = document.querySelectorAll('#items-table tbody tr');
+  let targetRow = Array.from(rows).find(r => !r.querySelector('[name="item_name_en"]').value.trim());
+  if (!targetRow) targetRow = addRow();
+  targetRow.querySelector('[name="item_name_en"]').value = t.declared_name_en || '';
+  targetRow.querySelector('[name="item_name_cn"]').value = t.declared_name_cn || '';
+  targetRow.querySelector('[name="item_qty"]').value = t.quantity || 1;
+  targetRow.querySelector('[name="item_fob"]').value = t.declared_fob || '';
+  targetRow.querySelector('[name="item_unit_weight"]').value = t.unit_weight || '';
+  this.value = '';
+});
+
+function saveAsTemplate(btn) {
+  const tr = btn.closest('tr');
+  const nameEn = tr.querySelector('[name="item_name_en"]').value.trim();
+  if (!nameEn) { alert('请先填写英文申报品名再保存'); return; }
+  const payload = {
+    declared_name_en: nameEn,
+    declared_name_cn: tr.querySelector('[name="item_name_cn"]').value,
+    quantity: tr.querySelector('[name="item_qty"]').value,
+    declared_fob: tr.querySelector('[name="item_fob"]').value,
+    unit_weight: tr.querySelector('[name="item_unit_weight"]').value,
+  };
+  fetch('/api/declaration-templates', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload),
+  }).then(r => r.json()).then(data => {
+    if (data.success) {
+      declarationTemplates.unshift(data.template);
+      refreshTemplateSelect();
+      btn.textContent = '已保存 ✓';
+      setTimeout(() => { btn.textContent = '保存为常用'; }, 1500);
+    } else {
+      alert(data.error || '保存失败');
+    }
+  }).catch(() => alert('保存失败，请检查网络'));
+}
+
+// ---------------- 产品代码搜索自动填充 ----------------
+const productCodeInput = document.getElementById('productCodeInput');
+const productCodeSuggestions = document.getElementById('productCodeSuggestions');
+let productCodeDebounce = null;
+
+productCodeInput.addEventListener('input', function () {
+  clearTimeout(productCodeDebounce);
+  const q = this.value.trim();
+  if (!q) { productCodeSuggestions.style.display = 'none'; return; }
+  productCodeDebounce = setTimeout(() => {
+    fetch('/api/product-codes/search?q=' + encodeURIComponent(q))
+      .then(r => r.json())
+      .then(items => {
+        if (!items.length) { productCodeSuggestions.style.display = 'none'; return; }
+        productCodeSuggestions.innerHTML = '';
+        items.forEach(p => {
+          const a = document.createElement('a');
+          a.href = '#';
+          a.className = 'list-group-item list-group-item-action py-1';
+          a.textContent = p.code + (p.name ? ' - ' + p.name : '');
+          a.onclick = function (e) {
+            e.preventDefault();
+            productCodeInput.value = p.code;
+            productCodeSuggestions.style.display = 'none';
+          };
+          productCodeSuggestions.appendChild(a);
+        });
+        productCodeSuggestions.style.display = 'block';
+      });
+  }, 250);
+});
+document.addEventListener('click', function (e) {
+  if (!productCodeSuggestions.contains(e.target) && e.target !== productCodeInput) {
+    productCodeSuggestions.style.display = 'none';
+  }
+});
+</script>
+{% endblock %}

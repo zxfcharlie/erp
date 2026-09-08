@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}利润统计{% endblock %}
+{% block content %}
+<h4 class="mb-3">订单利润统计</h4>
+<p class="text-muted small">基础利润 = 实收金额 - 采购成本(人民币)；最终利润 = 基础利润 - 实际物流运费。运费来自订单详情页抓取或手动录入，没有运费数据的订单最终利润显示"-"，不计入合计平均。</p>
+
+<form class="row g-2 mb-3" method="get">
+  <div class="col-md-3">
+    <select name="shop_id" class="form-select">
+      <option value="">全部店铺</option>
+      {% for s in shops %}
+      <option value="{{ s.id }}" {% if filters.shop_id == s.id %}selected{% endif %}>{{ s.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-3"><input class="form-control" type="date" name="date_from" value="{{ filters.date_from }}"></div>
+  <div class="col-md-1 d-flex align-items-center">至</div>
+  <div class="col-md-3"><input class="form-control" type="date" name="date_to" value="{{ filters.date_to }}"></div>
+  <div class="col-md-2"><button class="btn btn-primary w-100">筛选</button></div>
+</form>
+
+<div class="row mb-3">
+  <div class="col-md-2"><div class="card"><div class="card-body p-2"><div class="text-muted small">订单金额合计</div><div class="fs-5">{{ '%.2f'|format(totals.order_amount) }}</div></div></div></div>
+  <div class="col-md-2"><div class="card"><div class="card-body p-2"><div class="text-muted small">实收金额合计</div><div class="fs-5">{{ '%.2f'|format(totals.actual_received_amount) }}</div></div></div></div>
+  <div class="col-md-2"><div class="card"><div class="card-body p-2"><div class="text-muted small">采购成本合计</div><div class="fs-5">{{ '%.2f'|format(totals.purchase_cost_rmb) }}</div></div></div></div>
+  <div class="col-md-2"><div class="card"><div class="card-body p-2"><div class="text-muted small">实际运费合计</div><div class="fs-5">{{ '%.2f'|format(totals.actual_freight) }}</div></div></div></div>
+  <div class="col-md-2"><div class="card"><div class="card-body p-2"><div class="text-muted small">基础利润合计</div><div class="fs-5">{{ '%.2f'|format(totals.base_profit) }}</div></div></div></div>
+  <div class="col-md-2"><div class="card"><div class="card-body p-2"><div class="text-muted small">最终利润合计（{{ totals.final_profit_count }}单有运费数据）</div><div class="fs-5">{{ '%.2f'|format(totals.final_profit) }}</div></div></div></div>
+</div>
+
+<table class="table table-bordered bg-white orders-table">
+  <thead class="table-light">
+    <tr>
+      <th>内部单号</th><th>店铺</th><th>创建时间</th>
+      <th>订单金额</th><th>实收金额</th><th>采购成本</th><th>实际运费</th>
+      <th>基础利润</th><th>最终利润</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      <td><a href="/orders/{{ r.order.id }}">{{ r.order.order_no }}</a></td>
+      <td>{{ r.order.shop.name if r.order.shop else '' }}</td>
+      <td>{{ r.order.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+      <td>{{ '%.2f'|format(r.order.order_amount) }}</td>
+      <td>{{ '%.2f'|format(r.order.actual_received_amount) }}</td>
+      <td>{{ '%.2f'|format(r.order.purchase_cost_rmb) }}</td>
+      <td>{{ '%.2f'|format(r.order.actual_freight) if r.has_freight else '-' }}</td>
+      <td class="{{ 'text-danger' if r.base_profit < 0 else 'text-success' }}">{{ '%.2f'|format(r.base_profit) }}</td>
+      <td>
+        {% if r.has_freight %}
+        <span class="{{ 'text-danger' if r.final_profit < 0 else 'text-success' }}">{{ '%.2f'|format(r.final_profit) }}</span>
+        {% else %}<span class="text-muted">-</span>{% endif %}
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="9" class="text-center text-muted py-4">暂无订单</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

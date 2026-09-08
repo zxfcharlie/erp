@@ -1,0 +1,13 @@
+body { background: #f5f6f8; }
+.card { margin-bottom: 1rem; }
+.form-section-title {
+  font-weight: 600;
+  border-left: 4px solid #0d6efd;
+  padding-left: 8px;
+  margin: 1.2rem 0 0.8rem;
+}
+.badge-status-draft { background: #6c757d; }
+.badge-status-success { background: #198754; }
+.badge-status-failed { background: #dc3545; }
+.badge-status-pushed { background: #0d6efd; }
+table.orders-table td, table.orders-table th { vertical-align: middle; }

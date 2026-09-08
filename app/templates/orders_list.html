@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}订单列表{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0">发货订单列表</h4>
+  <div>
+    {% if user.is_admin %}
+    <form method="post" action="/admin/archive-now" class="d-inline">
+      <button class="btn btn-outline-secondary" title="超出200条(可调)的老订单会被压缩归档到历史订单，默认每天自动跑一次，这里可以手动立即触发">立即归档老订单</button>
+    </form>
+    {% endif %}
+    <a href="/order-archive" class="btn btn-outline-secondary">历史订单</a>
+    <a href="/reports/profit" class="btn btn-outline-primary">利润统计</a>
+    <a href="/orders/new" class="btn btn-primary">+ 新建发货订单</a>
+  </div>
+</div>
+{% if request.query_params.get('archived') %}
+<div class="alert alert-success">本次归档了 {{ request.query_params.get('archived') }} 条老订单到"历史订单"。</div>
+{% endif %}
+
+<form class="row g-2 mb-3" method="get">
+  <div class="col-md-2">
+    <select name="shop_id" class="form-select">
+      <option value="">全部店铺</option>
+      {% for s in shops %}
+      <option value="{{ s.id }}" {% if filters.shop_id == s.id %}selected{% endif %}>{{ s.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2">
+    <select name="status" class="form-select">
+      <option value="">全部状态</option>
+      {% for k, v in {'draft':'草稿','success':'推送成功','failed':'推送失败'}.items() %}
+      <option value="{{ k }}" {% if filters.status == k %}selected{% endif %}>{{ v }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2">
+    <select name="delivery_status" class="form-select">
+      <option value="">全部签收状态</option>
+      <option value="in_transit" {% if filters.delivery_status == 'in_transit' %}selected{% endif %}>运输中</option>
+      <option value="delivered" {% if filters.delivery_status == 'delivered' %}selected{% endif %}>已签收</option>
+    </select>
+  </div>
+  <div class="col-md-2">
+    <select name="review_status" class="form-select">
+      <option value="">全部审核状态</option>
+      <option value="pending" {% if filters.review_status == 'pending' %}selected{% endif %}>待审核</option>
+      <option value="approved" {% if filters.review_status == 'approved' %}selected{% endif %}>已审核</option>
+    </select>
+  </div>
+  <div class="col-md-2"><input class="form-control" name="product_code" value="{{ filters.product_code }}" placeholder="产品代码"></div>
+  <div class="col-md-2"><input class="form-control" name="customer_order_number" value="{{ filters.customer_order_number }}" placeholder="客户订单号"></div>
+  <div class="col-md-2"><input class="form-control" name="tracking_number" value="{{ filters.tracking_number }}" placeholder="运单号/跟踪号"></div>
+  <div class="col-md-2"><input class="form-control" type="date" name="date_from" value="{{ filters.date_from }}"></div>
+  <div class="col-md-2 d-flex align-items-center">至</div>
+  <div class="col-md-2"><input class="form-control" type="date" name="date_to" value="{{ filters.date_to }}"></div>
+  <div class="col-md-2"><button class="btn btn-primary w-100">筛选</button></div>
+  <div class="col-md-2"><a href="/orders" class="btn btn-outline-secondary w-100">重置</a></div>
+</form>
+
+<table class="table table-bordered bg-white orders-table">
+  <thead class="table-light">
+    <tr>
+      <th>内部单号</th><th>客户订单号</th><th>商品名称</th><th>店铺</th><th>收件人/国家</th>
+      <th>订单金额</th><th>实收金额</th><th>采购成本</th><th>实际运费</th>
+      <th>推送状态</th><th>签收状态</th><th>审核状态</th><th>运单号</th><th>创建人</th><th>创建时间</th><th></th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for o in orders %}
+    <tr>
+      <td>{{ o.order_no }}</td>
+      <td>{{ o.customer_order_number }}</td>
+      <td>{{ o.product_name }}</td>
+      <td>{{ o.shop.name if o.shop else '' }}</td>
+      <td>{{ o.receiver_name }} / {{ o.receiver_country }}</td>
+      <td>{{ '%.2f'|format(o.order_amount) }}</td>
+      <td>{{ '%.2f'|format(o.actual_received_amount) }}</td>
+      <td>{{ '%.2f'|format(o.purchase_cost_rmb) }}</td>
+      <td>{{ '%.2f'|format(o.actual_freight) if o.actual_freight is not none else '-' }}</td>
+      <td><span class="badge badge-status-{{ o.status }}">{{ {'draft':'草稿','pushed':'已推送','success':'推送成功','failed':'推送失败'}.get(o.status, o.status) }}</span></td>
+      <td>
+        {% if o.delivery_status == 'delivered' %}<span class="badge bg-success">已签收</span>
+        {% elif o.delivery_status == 'in_transit' %}<span class="badge bg-info text-dark">运输中</span>
+        {% else %}<span class="text-muted">-</span>{% endif %}
+      </td>
+      <td>
+        {% if o.review_status == 'pending' %}<span class="badge bg-warning text-dark">待审核</span>
+        {% else %}<span class="badge bg-light text-dark border">已审核</span>{% endif %}
+      </td>
+      <td>{{ o.tracking_number }}</td>
+      <td>{{ o.created_by_name }}{% if o.source == 'api' %}<span class="badge bg-secondary ms-1" style="font-size:0.65em">API</span>{% endif %}</td>
+      <td>{{ o.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+      <td><a class="btn btn-sm btn-outline-primary" href="/orders/{{ o.id }}">查看</a></td>
+    </tr>
+  {% else %}
+    <tr><td colspan="16" class="text-center text-muted py-4">
+      {% if not shops %}您暂未被分配任何店铺，请联系管理员配置。{% else %}暂无订单{% endif %}
+    </td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,26 @@
+version: "3.8"
+services:
+  erp:
+    build: .
+    image: cross-border-erp:latest
+    container_name: cross-border-erp
+    ports:
+      - "8311:8311"
+    volumes:
+      - erp_data:/data
+    environment:
+      - SECRET_KEY=change-this-to-a-random-secret-in-production
+      - ERP_DATA_DIR=/data
+      # 定时任务/归档相关，可按需调整：
+      # - TRACKING_SYNC_MINUTES=60
+      # - ORDER_ARCHIVE_KEEP=200
+      # - ORDER_ARCHIVE_CHECK_HOURS=24
+    restart: unless-stopped
+    # 8GB内存的机器给512MB上限完全够用(单进程、单worker、SQLite)，
+    # 防止极端情况下内存异常增长影响服务器上其它服务；可按需调大/去掉这行。
+    # 注意：这里用 mem_limit(docker compose 直接生效)，而不是 deploy.resources.limits
+    # (那个只在 docker stack/swarm 模式下才生效，普通 docker compose up 不会生效)。
+    mem_limit: 512m
+
+volumes:
+  erp_data:

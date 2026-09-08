@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}用户审核{% endblock %}
+{% block content %}
+<h4 class="mb-3">用户审核与店铺分配</h4>
+<table class="table table-bordered bg-white orders-table">
+  <thead class="table-light">
+    <tr>
+      <th>用户名</th><th>姓名</th><th>角色</th><th>状态</th><th>所属店铺</th><th>操作</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for u in users %}
+    <tr>
+      <td>{{ u.username }}</td>
+      <td>{{ u.real_name }}</td>
+      <td>
+        <form method="post" action="/admin/users/{{ u.id }}/role" class="d-flex gap-1">
+          <select name="role" class="form-select form-select-sm" onchange="this.form.submit()">
+            <option value="user" {% if u.role=='user' %}selected{% endif %}>普通用户</option>
+            <option value="admin" {% if u.role=='admin' %}selected{% endif %}>管理员</option>
+          </select>
+        </form>
+      </td>
+      <td>
+        {% if u.status == 'approved' %}<span class="badge bg-success">已通过</span>
+        {% elif u.status == 'pending' %}<span class="badge bg-warning text-dark">待审核</span>
+        {% else %}<span class="badge bg-secondary">已拒绝</span>{% endif %}
+      </td>
+      <td style="min-width:220px">
+        <form method="post" action="/admin/users/{{ u.id }}/shops">
+          <select name="shop_ids" class="form-select form-select-sm mb-1" multiple size="3">
+            {% for s in shops %}
+            <option value="{{ s.id }}" {% if s.id in u.shop_ids %}selected{% endif %}>{{ s.name }}</option>
+            {% endfor %}
+          </select>
+          <button class="btn btn-sm btn-outline-primary w-100" type="submit">保存店铺</button>
+        </form>
+      </td>
+      <td style="min-width:180px">
+        <div class="d-flex flex-column gap-1">
+          {% if u.status != 'approved' %}
+          <form method="post" action="/admin/users/{{ u.id }}/approve"><button class="btn btn-sm btn-success w-100">通过</button></form>
+          {% endif %}
+          {% if u.status != 'rejected' %}
+          <form method="post" action="/admin/users/{{ u.id }}/reject"><button class="btn btn-sm btn-outline-danger w-100">拒绝</button></form>
+          {% endif %}
+          <form method="post" action="/admin/users/{{ u.id }}/reset_password" class="d-flex gap-1">
+            <input class="form-control form-control-sm" name="new_password" placeholder="新密码(≥6位)">
+            <button class="btn btn-sm btn-outline-secondary">重置</button>
+          </form>
+        </div>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

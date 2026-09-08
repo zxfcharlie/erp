@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}历史订单详情{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0">历史订单详情 - {{ archive.order_no }}</h4>
+  <a href="/order-archive" class="btn btn-secondary btn-sm">返回历史订单列表</a>
+</div>
+<p class="text-muted small">该订单已归档压缩存储，此页面是从压缩数据实时解压展示的完整字段。</p>
+
+<div class="card">
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-3"><b>店铺：</b>{{ archive.shop.name if archive.shop else '' }}</div>
+      <div class="col-md-3"><b>客户订单号：</b>{{ data.customer_order_number }}</div>
+      <div class="col-md-3"><b>推送状态：</b>{{ {'draft':'草稿','success':'推送成功','failed':'推送失败'}.get(data.status, data.status) }}</div>
+      <div class="col-md-3"><b>运单号：</b>{{ data.tracking_number or '-' }}</div>
+    </div>
+    <div class="row mt-2">
+      <div class="col-md-3"><b>订单金额：</b>{{ data.order_amount }}</div>
+      <div class="col-md-3"><b>实收金额：</b>{{ data.actual_received_amount }}</div>
+      <div class="col-md-3"><b>采购成本(¥)：</b>{{ data.purchase_cost_rmb }}</div>
+      <div class="col-md-3"><b>实际运费：</b>{{ data.actual_freight if data.actual_freight is not none else '-' }} {{ data.freight_currency }}</div>
+    </div>
+    <div class="row mt-2">
+      <div class="col-md-3"><b>创建人：</b>{{ data.created_by_name }}</div>
+      <div class="col-md-3"><b>创建时间：</b>{{ data.created_at }}</div>
+      <div class="col-md-3"><b>签收状态：</b>{{ {'delivered':'已签收','in_transit':'运输中'}.get(data.delivery_status, '未知') }}</div>
+      <div class="col-md-3"><b>归档时间：</b>{{ archive.archived_at.strftime('%Y-%m-%d %H:%M') if archive.archived_at else '' }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <h6>收发件信息</h6>
+    <div class="row">
+      <div class="col-md-6">
+        <b>收件人：</b>{{ data.receiver_name }}（{{ data.receiver_country }}）<br>
+        {{ data.receiver_address }}, {{ data.receiver_city }} {{ data.receiver_state }} {{ data.receiver_zip }}<br>
+        电话：{{ data.receiver_phone }}
+      </div>
+      <div class="col-md-6">
+        <b>发件人：</b>{{ data.sender_name }}（{{ data.sender_country }}）<br>
+        {{ data.sender_address }}, {{ data.sender_city }} {{ data.sender_state }} {{ data.sender_zip }}<br>
+        电话：{{ data.sender_phone }}
+      </div>
+    </div>
+    <hr>
+    <div class="row">
+      <div class="col-md-4"><b>产品代码：</b>{{ data.product_code }}</div>
+      <div class="col-md-4"><b>件数/总重：</b>{{ data.package_count }} 件 / {{ data.total_weight }} kg</div>
+      <div class="col-md-4"><b>货物类型：</b>{{ data.cargo_type }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <h6>申报品名</h6>
+    <table class="table table-sm table-bordered">
+      <thead><tr><th>SKU</th><th>英文品名</th><th>中文品名</th><th>数量</th><th>FOB</th><th>单重</th><th>海关编码</th></tr></thead>
+      <tbody>
+      {% for it in declared_items %}
+        <tr>
+          <td>{{ it.sku }}</td><td>{{ it.declared_name_en }}</td><td>{{ it.declared_name_cn }}</td>
+          <td>{{ it.quantity }}</td><td>{{ it.declared_fob }}</td><td>{{ it.unit_weight }}</td><td>{{ it.hs_code }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<details class="mb-4"><summary class="text-muted small">查看全部原始字段(调试用)</summary>
+<pre style="max-height:400px;overflow:auto;font-size:0.8em;">{{ data }}</pre>
+</details>
+{% endblock %}
